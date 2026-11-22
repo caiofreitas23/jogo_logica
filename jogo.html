@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Memória Lógica: multijogador</title>
+<style>
+:root{--bg:#22343f;--bg2:#1b2a33;--paper:#f1e9d8;--ink:#221f1b;--acc:#d98a4e;--teal:#9cc7b7;--txt:#ece6d8;--mut:#9fb0b6;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#18262e;--bg2:#121d23;--paper:#e8dfcc;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#18262e;--bg2:#121d23;--paper:#e8dfcc;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--txt);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#app{max-width:900px;margin:0 auto;padding:18px 16px 40px}
+h1,h2{font-family:"Iowan Old Style",Georgia,serif;font-weight:600;margin:0}
+h1{font-size:29px}
+h2{font-size:18px}
+.sub{color:var(--mut);margin:4px 0 16px}
+.panel{background:var(--bg2);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:14px;margin-bottom:14px}
+.row{display:flex;gap:8px;margin-bottom:8px}
+select{font:inherit;padding:9px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.25);background:var(--bg);color:var(--txt)}
+label{display:block;font-size:14px;color:var(--mut);margin:12px 0 6px}
+input{font:inherit;padding:9px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.25);background:var(--bg);color:var(--txt);flex:1;min-width:0}
+button{font:inherit;cursor:pointer}
+.btn{background:var(--acc);color:#2a1a0e;border:0;border-radius:6px;padding:10px 18px;font-weight:600}
+.btn.alt{background:transparent;color:var(--txt);border:1px solid rgba(255,255,255,.35)}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg button{background:transparent;color:var(--txt);border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:8px 14px}
+.seg button.on{background:var(--txt);color:var(--bg2)}
+.bar{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:12px;color:var(--mut);font-size:14px}
+.bar b{font:24px Georgia,serif;color:var(--txt);margin-left:4px}
+.score{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:12px}
+.pl{border:1px solid rgba(255,255,255,.18);border-top:4px solid var(--c);border-radius:8px;padding:7px 10px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:2px 6px;min-width:0}
+.pl b{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl span{font:22px Georgia,serif}
+.pl em{font-style:normal;font-size:12px;opacity:.75;width:100%}
+.pl.on{background:var(--c);color:#1d1a15;border-color:var(--c)}
+.msg{min-height:50px;font-size:15px;margin-bottom:12px;color:var(--mut)}
+.msg b{color:var(--txt);font-family:Georgia,serif;font-weight:400;font-size:17px}
+.boards{display:grid;grid-template-columns:1.25fr 1fr;gap:14px;align-items:start}
+.bd h2{margin-bottom:10px;display:flex;justify-content:space-between;align-items:baseline}
+.bd h2 span{font:13px system-ui,sans-serif;color:var(--mut)}
+.grid{display:grid;gap:8px}
+.gA{grid-template-columns:repeat(2,1fr)}
+.gB{grid-template-columns:repeat(3,1fr)}
+.boards.big .gA{grid-template-columns:repeat(3,1fr)}
+.boards.big .gB{grid-template-columns:repeat(5,1fr)}
+.boards.big .gB .front i{font-size:24px}
+.tb{margin:12px auto;border-collapse:collapse;color:var(--txt)}
+.tb th{font:12px system-ui,sans-serif;color:var(--mut);font-weight:400;padding:4px 12px}
+.tb td{padding:6px 12px;border-top:1px solid rgba(255,255,255,.15)}
+.tb td:last-child{font:22px Georgia,serif;color:var(--acc)}
+.c{perspective:700px;height:86px;border:0;padding:0;background:none}
+.in{position:relative;width:100%;height:100%;transition:transform .45s;transform-style:preserve-3d}
+.c.up .in{transform:rotateY(180deg)}
+.f{position:absolute;inset:0;border-radius:8px;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;text-align:center;padding:6px}
+.back{background-color:var(--paper);background-image:repeating-linear-gradient(45deg,transparent 0 7px,rgba(34,31,27,.13) 7px 8px);color:var(--ink);font:600 24px Georgia,serif;outline:1px solid rgba(34,31,27,.35);outline-offset:-5px}
+.gB .back{background-color:var(--teal)}
+.front{background:var(--paper);color:var(--ink);transform:rotateY(180deg);font:600 13.5px/1.25 Georgia,serif;border-bottom:6px solid transparent;flex-direction:column;gap:2px}
+.front i{font:normal 600 30px/1 Georgia,serif}
+.front small{font:10px system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;color:#5b5346}
+.gB .front{background:var(--teal)}
+.c.done .front{border-bottom-color:var(--o);opacity:.85}
+.c.blk{opacity:.4;cursor:not-allowed;outline:2px dashed var(--acc);outline-offset:-2px;border-radius:8px}
+.center{text-align:center}
+.big{font:26px Georgia,serif;margin:6px 0}
+details{margin:12px 0;color:var(--mut)}
+summary{cursor:pointer;color:var(--txt)}
+details p{margin:6px 0;font-size:14.5px}
+@media (max-width:640px){.boards{grid-template-columns:1fr}.c{height:80px}.boards.big .gA{grid-template-columns:repeat(2,1fr)}.boards.big .gB{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const SINGLE=false;
+const COL=['#e2a94b','#6fb3a0','#d97b66','#8fa4d9'];
+const CON={AND:['∧','E','conjunção'],OR:['∨','OU','disjunção'],IMP:['→','SE… ENTÃO','condicional'],IFF:['↔','SE E SOMENTE SE','bicondicional'],NOT:['¬','NÃO','negação']};
+const FRASES={
+AND:['Maria estuda e João trabalha.','O céu está claro e o vento está fraco.','Pedro leu o livro e viu o filme.','Ana canta e Bia toca violão.','Carlos fez o almoço e Paula arrumou a mesa.','A loja abre cedo e fecha tarde.','Rita correu na praia e nadou no mar.','O professor explicou a matéria e os alunos fizeram anotações.','Está calor e o ventilador está ligado.','Eu tenho caneta e tenho caderno.'],
+OR:['Vou de ônibus ou vou de carro.','Hoje tem prova ou tem trabalho.','Lia come pizza ou come massa.','O time vence ou empata.','Vou ao cinema ou fico em casa.','O aluno estuda de manhã ou estuda à noite.','Beto viaja em julho ou viaja em dezembro.','A senha tem oito letras ou tem oito números.','Eu pago no cartão ou pago no pix.','O jogo termina hoje ou termina amanhã.'],
+IMP:['Se chover, então a rua fica molhada.','Se eu estudar, então vou passar.','Se o sinal fechar, então os carros param.','Se eu acordar cedo, então chego a tempo.','Se a bateria acabar, então o celular desliga.','Se o café esfriar, então vou esquentá-lo.','Se o preço cair, então vou comprar.','Se houver sol, então vamos à praia.','Se o número termina em zero, então ele é múltiplo de dez.','Se o aluno faltar, então perde a aula.'],
+IFF:['Passo se e somente se eu estudar.','A porta abre se e somente se a senha estiver certa.','O alarme toca se e somente se houver fumaça.','Ganho o bônus se e somente se bater a meta.','Entro no site se e somente se tiver internet.','O triângulo é equilátero se e somente se tem três lados iguais.','Viajo se e somente se o voo estiver confirmado.','O número é par se e somente se é divisível por dois.','A lâmpada acende se e somente se o interruptor estiver ligado.','Saio de casa se e somente se parar de chover.'],
+NOT:['Não está chovendo.','Não é verdade que Ana faltou.','Pedro não foi à festa.','Não é verdade que o trem atrasou.','O restaurante não abriu hoje.','Não é verdade que o ônibus passou.','Carla não gosta de café.','Não está fazendo frio.','Não é verdade que a loja fechou.','O trem não chegou no horário.']};
+let names=['Jogador 1','Jogador 2','Jogador 3','Jogador 4'],np=SINGLE?1:2,per=2,G=null,bots=[0,0,0,0],lvl=1;
+const LEVEL=[.35,.65,.95];
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+const $=document.getElementById('app');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const recKey=()=>'memlog-rec-'+per;
+function getRec(){try{const v=localStorage.getItem(recKey());return v?+v:null}catch(e){return null}}
+function setRec(v){try{localStorage.setItem(recKey(),String(v))}catch(e){}}
+
+function setup(){
+  G=null;
+  $.innerHTML=`<h1>${SINGLE?'Memória Lógica: modo solo':'Memória Lógica: multijogador'}</h1><p class="sub">${SINGLE?'Você contra o tabuleiro: ligue cada frase ao conectivo dela no menor número de tentativas.':'Dois a quatro jogadores no mesmo aparelho, cada um disputando os pares.'}</p>
+  <div class="panel">${SINGLE?'':`<label style="margin-top:0">Jogadores</label>
+  <div class="seg">${[2,3,4].map(n=>`<button class="${n===np?'on':''}" onclick="np=${n};setup()">${n}</button>`).join('')}</div>
+  <label>Nomes e tipo de jogador</label>${names.slice(0,np).map((n,i)=>`<div class="row"><input value="${esc(n)}" maxlength="16" oninput="names[${i}]=this.value"><select onchange="setBot(${i},+this.value)"><option value="0" ${bots[i]?'':'selected'}>Pessoa</option><option value="1" ${bots[i]?'selected':''}>Computador</option></select></div>`).join('')}${bots.slice(0,np).some(x=>x)?`<label>Nível do computador</label><div class="seg">${['Fácil','Médio','Difícil'].map((t,j)=>`<button class="${j===lvl?'on':''}" onclick="lvl=${j};setup()">${t}</button>`).join('')}</div>`:''}<div class="btns" style="margin-top:12px"><button class="btn alt" onclick="vsPC()">Eu contra o computador</button></div>`}
+  <label ${SINGLE?'style="margin-top:0"':''}>Cartas em cada tabuleiro</label>
+  <div class="seg">${[[1,'5'],[2,'10'],[4,'20'],[6,'30'],[8,'40'],[10,'50']].map(([n,t])=>`<button class="${n===per?'on':''}" onclick="per=${n};setup()">${t}</button>`).join('')}</div>
+  ${SINGLE&&getRec()?`<p class="sub" style="margin:12px 0 0">Seu melhor resultado com esse tamanho: ${getRec()} tentativas.</p>`:''}
+  <div class="btns"><button class="btn" onclick="start()">Começar</button></div></div>
+  <details><summary>Como jogar</summary>
+  <p>O tabuleiro de Proposições tem frases do dia a dia. O de Conectivos tem as cartas ∧, ∨, →, ↔ e ¬, repetidas várias vezes.</p>
+  <p>${SINGLE?'A cada tentativa':'Na sua vez'}, vire uma carta de cada tabuleiro. Se o conectivo principal da frase for o da carta, o par é ${SINGLE?'formado':'seu, vale um ponto e você joga de novo'}. Se não for, as duas voltam${SINGLE?'.':' e a vez passa.'}</p>
+  ${SINGLE?'<p>Regra do modo solo: você não pode escolher a mesma proposição duas vezes seguidas. Depois de uma tentativa errada, a frase usada fica bloqueada (tracejada) até a próxima tentativa terminar. Isso obriga a explorar o tabuleiro em vez de insistir na mesma carta.</p>':''}
+  <p>O contador de tentativas conta cada par de cartas virado, certo ou errado.</p>${SINGLE?'':'<p>Cada vaga pode ser uma pessoa ou o computador. Para jogar sozinho contra a máquina, deixe uma vaga como Pessoa e as outras como Computador. O computador também erra: no nível Fácil esquece muitas cartas, no Difícil quase não esquece.</p>'}</details>`;
+}
+function setBot(i,v){bots[i]=v;if(v&&/^Jogador \d$/.test(names[i]))names[i]='Computador '+(i+1);else if(!v&&/^Computador \d$/.test(names[i]))names[i]='Jogador '+(i+1);setup()}
+function vsPC(){np=2;bots=[0,1,0,0];if(/^Computador \d$/.test(names[0]))names[0]='Jogador 1';names[1]='Computador 2';setup()}
+function botNext(){if(G&&G.found<G.total&&G.pl[G.turn].bot)setTimeout(botMove,1000)}
+function botMove(){
+  if(!G||G.lock||!G.pl[G.turn].bot)return;
+  const m=LEVEL[lvl],down=s=>G[s].map((c,i)=>i).filter(i=>G[s][i].f===0),
+  rem=(set,s)=>[...set].filter(i=>G[s][i].f===0&&Math.random()<m);
+  const kA=shuffle(rem(G.seenA,'A')),kB=shuffle(rem(G.seenB,'B'));
+  let ia=null,ib=null;
+  for(const a of kA){const b=kB.find(b=>G.B[b].k===G.A[a].k);if(b!==undefined){ia=a;ib=b;break}}
+  if(ia===null){
+    const dA=down('A'),uA=dA.filter(i=>!G.seenA.has(i));
+    ia=rnd(uA.length?uA:dA);
+    const hit=kB.filter(b=>G.B[b].k===G.A[ia].k);
+    if(hit.length)ib=hit[0];
+    else{const dB=down('B'),uB=dB.filter(i=>!G.seenB.has(i));ib=rnd(uB.length?uB:dB)}
+  }
+  pick('A',ia,true);
+  setTimeout(()=>{if(G)pick('B',ib,true)},900);
+}
+function start(){
+  const A=[],B=[];
+  Object.keys(CON).forEach(k=>shuffle(FRASES[k].slice()).slice(0,per).forEach(s=>{A.push({k,t:s,f:0});B.push({k,f:0})}));
+  shuffle(A);shuffle(B);
+  G={A,B,pl:(SINGLE?['Você']:names.slice(0,np)).map((n,i)=>({n:(n||'').trim()||'Jogador '+(i+1),s:0,t:0,bot:!SINGLE&&!!bots[i]})),turn:0,sa:null,sb:null,last:null,lock:false,found:0,total:A.length,tries:0,seenA:new Set(),seenB:new Set(),
+  msg:SINGLE?'Vire uma carta de cada tabuleiro. A proposição da tentativa anterior fica bloqueada.':'Vire uma carta de cada tabuleiro.'};
+  $.innerHTML=`<div class="bar"><span>Tentativas<b id="tr">0</b></span><span>Pares<b id="pr">0/${A.length}</b></span></div><div class="score" id="sc"></div><div class="msg" id="msg"></div><div class="boards ${A.length>20?'big':''}">
+  <div class="panel bd"><h2>Proposições <span>${A.length} cartas</span></h2><div class="grid gA">${A.map((c,i)=>`<button class="c" id="a${i}" onclick="pick('A',${i})"><div class="in"><div class="f back">P</div><div class="f front">${esc(c.t)}</div></div></button>`).join('')}</div></div>
+  <div class="panel bd"><h2>Conectivos <span>${B.length} cartas</span></h2><div class="grid gB">${B.map((c,i)=>`<button class="c" id="b${i}" onclick="pick('B',${i})"><div class="in"><div class="f back">∗</div><div class="f front"><i>${CON[c.k][0]}</i><small>${CON[c.k][1]}</small></div></div></button>`).join('')}</div></div></div>`;
+  upd();botNext();
+}
+function upd(){
+  document.getElementById('tr').textContent=G.tries;
+  document.getElementById('pr').textContent=G.found+'/'+G.total;
+  document.getElementById('sc').innerHTML=SINGLE?'':G.pl.map((p,i)=>`<div class="pl ${i===G.turn?'on':''}" style="--c:${COL[i]}"><b>${esc(p.n)}</b><span>${p.s}</span><em>${p.t} tentativa${p.t===1?'':'s'}</em></div>`).join('');
+  document.getElementById('msg').innerHTML=G.msg;
+}
+function setCard(s,i){
+  const c=G[s][i],el=document.getElementById(s.toLowerCase()+i);
+  el.className='c'+(c.f?' up':'')+(c.f===2?' done':'')+(SINGLE&&s==='A'&&G.last===i&&!c.f?' blk':'');
+  if(c.f===2)el.style.setProperty('--o',COL[c.o]);
+}
+function setLast(v){const o=G.last;G.last=v;if(o!==null)setCard('A',o);if(v!==null)setCard('A',v)}
+function pick(s,i,auto){
+  const c=G[s][i];
+  if(G.lock||c.f||(!auto&&G.pl[G.turn].bot))return;
+  if(s==='A'){
+    if(G.sa!==null)return;
+    if(SINGLE&&G.last===i){G.msg='Regra do modo solo: essa proposição foi usada na tentativa anterior. Escolha outra.';upd();return}
+    G.sa=i;
+  }else{if(G.sb!==null)return;G.sb=i}
+  c.f=1;setCard(s,i);(s==='A'?G.seenA:G.seenB).add(i);
+  if(G.sa===null||G.sb===null){G.msg='Agora vire uma carta do outro tabuleiro.';upd();return}
+  G.lock=true;G.tries++;G.pl[G.turn].t++;
+  const ia=G.sa,ib=G.sb,a=G.A[ia],b=G.B[ib];G.sa=G.sb=null;
+  if(a.k===b.k){
+    setTimeout(()=>{
+      a.f=b.f=2;a.o=b.o=G.turn;setCard('A',ia);setCard('B',ib);setLast(null);
+      G.pl[G.turn].s++;G.found++;
+      G.msg=`<b>${esc(a.t)}</b><br>Conectivo principal: ${CON[a.k][0]} (${CON[a.k][1]}), ${CON[a.k][2]}.${SINGLE?'':' '+esc(G.pl[G.turn].n)+' joga de novo.'}`;
+      G.lock=false;upd();
+      if(G.found===G.total)setTimeout(end,1400);else botNext();
+    },600);
+  }else{
+    G.msg='O conectivo principal dessa frase é outro.';upd();
+    setTimeout(()=>{
+      a.f=b.f=0;setCard('A',ia);setCard('B',ib);setLast(ia);
+      if(!SINGLE)G.turn=(G.turn+1)%G.pl.length;
+      G.msg=SINGLE?'Errou. A frase anterior está bloqueada nesta tentativa.':'Vez de '+esc(G.pl[G.turn].n)+'.';
+      G.lock=false;upd();botNext();
+    },1600);
+  }
+}
+function end(){
+  let big,sub;
+  if(SINGLE){
+    const rec=getRec(),novo=rec===null||G.tries<rec;
+    if(novo)setRec(G.tries);
+    big='Todos os pares em '+G.tries+' tentativas';
+    sub=novo?(rec===null?'Primeiro resultado registrado com esse tamanho.':'Novo recorde! O anterior era '+rec+'.'):'Seu recorde com esse tamanho é '+rec+' tentativas.';
+  }else{
+    const nota=p=>p.t?p.s/p.t*10:0,fm=n=>n.toFixed(1).replace('.',',');
+    const r=[...G.pl].sort((x,y)=>y.s-x.s||nota(y)-nota(x)),tie=r[0].s===r[1].s&&nota(r[0])===nota(r[1]);
+    big=tie?'Empate em '+r[0].s+' pares':esc(r[0].n)+' venceu com '+r[0].s+' pares';
+    sub='<table class="tb"><tr><th>Jogador</th><th>Acertos</th><th>Tentativas</th><th>Pontuação (0 a 10)</th></tr>'+r.map(p=>'<tr><td>'+esc(p.n)+'</td><td>'+p.s+'</td><td>'+p.t+'</td><td>'+fm(nota(p))+'</td></tr>').join('')+'</table>Pontuação = acertos ÷ tentativas × 10. Total de tentativas na partida: '+G.tries+'.';
+  }
+  $.innerHTML=`<div class="panel center"><h2>Fim de jogo</h2><div class="big">${big}</div><div class="sub">${sub}</div>
+  <div class="btns" style="justify-content:center"><button class="btn" onclick="start()">Jogar de novo</button><button class="btn alt" onclick="setup()">Mudar opções</button></div></div>`;
+}
+setup();
+</script>
+</body>
+</html>
